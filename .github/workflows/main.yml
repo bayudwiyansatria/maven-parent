@@ -1,32 +1,116 @@
-name: Master
+name: Main
 on:
-  pull_request:
-    branches:
-    - master
+  workflow_dispatch:
+    inputs:
+      major-version:
+        description: 'Major Version'
+        required: true
+        default: '1'
+      minor-version:
+        description: 'Minor Version'
+        required: true
+        default: '0'
+      incremental-version:
+        description: 'Incremental Version'
+        required: true
+        default: '0'
+env:
+  tag_name: ${{ github.event.inputs.major-version }}.${{ github.event.inputs.minor-version }}.${{ github.event.inputs.incremental-version }}
 jobs:
-  # Build
   build:
     name: Build
+    runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
-        java-version: [1.8]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+        java-version: [ 11.0.3 ]
+        operating-system: [ ubuntu-latest ]
     steps:
-    - name: Install dependencies ${{ matrix.os }}
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get update
-    # Get Sources
-    - name: Checkout sources control
-      uses: actions/checkout@v1
-    # Setup Environment
-    - name: Setup java version $ {{ matrix.java-version }} 
-      uses: actions/setup-java@v1
+    - name: Prepare
+      uses: actions/checkout@v2
+    - name: Set Up Java Development Kit
+      uses: actions/setup-java@v2
       with:
         java-version: ${{ matrix.java-version }}
-        java-package: jdk
-        architecture: x64
-    # Runner
-    - name: Running Environment
+        distribution: adopt
+        cache: maven
+    - name: Maven clean test package
+      run: >-
+        mvn
+        clean
+        test
+        package
+        --file pom.xml
+        --no-transfer-progress
+    - name: Archive artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: target
+        path: target
+        retention-days: 1
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        java-version: [ 11.0.3 ]
+        operating-system: [ ubuntu-latest ]
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v2
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: target
+        path: target
+    - name: Set Up Java Development Kit
+      uses: actions/setup-java@v2
+      with:
+        java-version: ${{ matrix.java-version }}
+        distribution: adopt
+        cache: maven
+        server-username: ${{ github.event.repository.owner.login }}
+        server-password: MAVEN_CENTRAL_TOKEN
+    - name: Configure Git user
       run: |
-        java -version
+        git config user.email "actions@github.com"
+        git config user.name "GitHub Actions"
+    - name: Prepare Deployment
+      run: >-
+        mvn
+        build-helper:parse-version
+        versions:set -DnewVersion=\${{ env.tag_name }}-SNAPSHOT
+        versions:commit
+        --no-transfer-progress
+    - name: Deployment
+      run: >-
+        mvn
+        --batch-mode
+        --no-transfer-progress
+        -Dusername=${{ github.event.repository.owner.login }}
+        -Dpassword=${{ secrets.GITHUB_TOKEN }}
+        deploy
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MAVEN_CENTRAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Git
+      run: |
+        git add .
+        git commit -m "Release ${{ env.tag_name }}"
+        git tag ${{ env.tag_name }}
+        git push origin ${{ env.tag_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ env.tag_name }}
+        release_name: Release ${{ env.tag_name }}
+        body: |
+          Changes in this Release
+          - First Change
+          - Second Change
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
