@@ -184,6 +184,29 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
           <version>${maven-assembly-plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.apache.resources</groupId>
+              <artifactId>apache-source-release-assembly-descriptor</artifactId>
+              <version>${apache-source-release-assembly-descriptor.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>source-release-assembly</id>
+              <phase>package</phase>
+              <goals>
+                <goal>single</goal>
+              </goals>
+              <configuration>
+                <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                <descriptorRefs>
+                  <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
+                </descriptorRefs>
+                <tarLongFileMode>posix</tarLongFileMode>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -204,6 +227,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
           <version>${maven-deploy-plugin.version}</version>
+          <configuration>
+            <updateReleaseInfo>true</updateReleaseInfo>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -219,6 +245,21 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${maven-enforcer-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>enforce-maven-version</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireMavenVersion>
+                    <version>${maven.version}</version>
+                  </requireMavenVersion>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -268,6 +309,14 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${maven-javadoc-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -292,6 +341,19 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-remote-resources-plugin</artifactId>
           <version>${maven-remote-resources-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>process-resource-bundles</id>
+              <goals>
+                <goal>process</goal>
+              </goals>
+              <configuration>
+                <resourceBundles>
+                  <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
+                </resourceBundles>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -334,11 +396,27 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
           <version>${maven-site-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>attach-descriptor</id>
+              <goals>
+                <goal>attach-descriptor</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
           <version>${maven-source-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <goals>
+                <goal>jar-no-fork</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -376,85 +454,15 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.apache.resources</groupId>
-            <artifactId>apache-source-release-assembly-descriptor</artifactId>
-            <version>${apache-source-release-assembly-descriptor.version}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <id>source-release-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-              <descriptorRefs>
-                <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
-              </descriptorRefs>
-              <tarLongFileMode>posix</tarLongFileMode>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>net.nicoulaj.maven.plugins</groupId>
-        <artifactId>checksum-maven-plugin</artifactId>
-        <version>${maven-checksum-maven-plugin.version}</version>
-        <executions>
-          <execution>
-            <id>source-release-checksum</id>
-            <goals>
-              <goal>files</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <algorithms>
-            <algorithm>SHA-512</algorithm>
-          </algorithms>
-          <csvSummary>false</csvSummary>
-          <fileSets>
-            <fileSet>
-              <directory>${project.build.directory}</directory>
-              <includes>
-                <include>${project.artifactId}-${project.version}-source-release.zip</include>
-                <include>${project.artifactId}-${project.version}-source-release.tar*</include>
-              </includes>
-            </fileSet>
-          </fileSets>
-          <failIfNoFiles>false</failIfNoFiles>
-        </configuration>
       </plugin>
       <plugin>
         <inherited>true</inherited>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <updateReleaseInfo>true</updateReleaseInfo>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-maven-version</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireMavenVersion>
-                  <version>${maven.version}</version>
-                </requireMavenVersion>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -463,55 +471,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-remote-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>process-resource-bundles</id>
-            <goals>
-              <goal>process</goal>
-            </goals>
-            <configuration>
-              <resourceBundles>
-                <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
-              </resourceBundles>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-descriptor</id>
-            <goals>
-              <goal>attach-descriptor</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
