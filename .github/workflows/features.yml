@@ -1,0 +1,38 @@
+name: Features
+on:
+  pull_request:
+    branches:
+    - develop
+    types:
+    - opened
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      matrix:
+        java-version: [11.0.3]
+        operating-system: [ubuntu-latest]
+    steps:
+    - name: Prepare
+      uses: actions/checkout@v2
+    - name: Set Up Java Development Kit
+      uses: actions/setup-java@v2
+      with:
+        java-version: ${{ matrix.java-version }}
+        distribution: adopt
+        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    - name: Maven clean test package
+      run: >-
+        mvn
+        clean
+        test
+        package
+        --file pom.xml
+        --no-transfer-progress
