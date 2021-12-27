@@ -36,11 +36,15 @@ jobs:
     - name: Maven clean test package
       run: >-
         mvn
+        --no-transfer-progress
+        --settings settings.xml
+        --file pom.xml
         clean
         test
         package
-        --file pom.xml
-        --no-transfer-progress
+      env:
+        MAVEN_USERNAME: ${{ github.event.repository.owner.login }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -69,8 +73,6 @@ jobs:
         java-version: ${{ matrix.java-version }}
         distribution: adopt
         cache: maven
-        server-username: ${{ github.event.repository.owner.login }}
-        server-password: MAVEN_CENTRAL_TOKEN
     - name: Configure Git user
       run: |
         git config user.email "actions@github.com"
@@ -78,21 +80,25 @@ jobs:
     - name: Prepare Deployment
       run: >-
         mvn
+        --no-transfer-progress
+        --settings settings.xml
         build-helper:parse-version
         versions:set -DnewVersion=\${{ env.tag_name }}-SNAPSHOT
         versions:commit
-        --no-transfer-progress
+      env:
+        MAVEN_USERNAME: ${{ github.event.repository.owner.login }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
     - name: Deployment
       run: >-
         mvn
         --batch-mode
         --no-transfer-progress
-        -Dusername=${{ github.event.repository.owner.login }}
-        -Dpassword=${{ secrets.GITHUB_TOKEN }}
+        --settings settings.xml
+        --file pom.xml
         deploy
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        MAVEN_CENTRAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MAVEN_USERNAME: ${{ github.event.repository.owner.login }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
     - name: Git
       run: |
         git add .

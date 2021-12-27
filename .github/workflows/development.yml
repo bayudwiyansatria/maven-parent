@@ -1,8 +1,10 @@
 name: Development
 on:
-  push:
+  pull_request:
     branches:
     - develop
+    types:
+    - closed
 jobs:
   build:
     name: Build
@@ -29,11 +31,15 @@ jobs:
     - name: Maven clean test package
       run: >-
         mvn
+        --no-transfer-progress
+        --settings settings.xml
+        --file pom.xml
         clean
         test
         package
-        --file pom.xml
-        --no-transfer-progress
+      env:
+        MAVEN_USERNAME: ${{ github.event.repository.owner.login }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
     - name: Archive artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -62,7 +68,10 @@ jobs:
         java-version: ${{ matrix.java-version }}
         distribution: adopt
         cache: maven
+        settings-path: ${{ github.workspace }}
     - name: Maven deploy
-      run: mvn --batch-mode deploy --no-transfer-progress
+      run: mvn --batch-mode --no-transfer-progress --settings settings.xml --file pom.xml deploy
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MAVEN_USERNAME: ${{ github.event.repository.owner.login }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        
