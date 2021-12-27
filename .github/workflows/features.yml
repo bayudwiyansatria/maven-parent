@@ -5,6 +5,7 @@ on:
     - develop
     types:
     - opened
+    - reopened
 jobs:
   build:
     name: Build
